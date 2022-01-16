@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: privilege-control
+  # redis配置
+  redis:
+    host: 118.31.244.130
+    password: 34jwieorjwoe32djffd
+    port: 6379
+    database: 0
+    connect-timeout: 5s
+    # 使用lettuce连接池
+    lettuce:
+      pool:
+        max-active: 8
+        min-idle: 1
+        max-idle: 3
+        max-wait: 2s
+server:
+  port: 8080
+
+row:
+  privilege:
+    field: '{"name":"name"}'
+
+page:
+  filter:
+    condition: '{"name":"name"}'
+
