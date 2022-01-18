@@ -58,8 +58,7 @@ public class RowPrivilegeAspect {
      * @Description: 定义需要拦截的切面
      * @Return: void
      **/
-//    @Pointcut("@annotation(com.mx.privilege.annotation.RowPrivilege)")
-    @Pointcut("@annotation(org.springframework.web.bind.annotation.PostMapping)")
+    @Pointcut("@annotation(com.mx.privilege.annotation.RowPrivilege)")
     public void methodArgs() {
 
     }
