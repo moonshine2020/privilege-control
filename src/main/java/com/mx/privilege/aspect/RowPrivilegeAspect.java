@@ -2,6 +2,7 @@ package com.mx.privilege.aspect;
 
 import com.alibaba.fastjson.JSON;
 import com.mx.privilege.annotation.RowPrivilege;
+import com.mx.privilege.annotation.RowPrivilegeProperty;
 import com.mx.privilege.constant.Constant;
 import com.mx.privilege.exception.NoRowPrivilegeException;
 import com.mx.privilege.pojo.UserDto;
@@ -65,7 +66,6 @@ public class RowPrivilegeAspect {
 
     @Before("methodArgs()")
     public void invoke(JoinPoint joinPoint) {
-        Long userId;
 
         if (ArrayUtils.isEmpty(joinPoint.getArgs())) {
             log.error("RowPrivilegeAspect.invoke request have not any Parameter, Please check request");
@@ -92,7 +92,6 @@ public class RowPrivilegeAspect {
         try {
 
             // TODO 判断是否为超级管理员, 管理员直接放行, 待开发, 目前不支持,无法判断用户是否为超级管理员
-
             ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
             HttpServletRequest request = attributes.getRequest();
             String token = request.getHeader(Constant.TOKEN);
@@ -103,6 +102,7 @@ public class RowPrivilegeAspect {
             }
 
             // 校验token的有效性并获取用户信息
+            Long userId;
             Object info = redisUtil.get(Constant.USE_TOKEN_KEY_PREFIX + token);
             if (info != null) {
                 UserDto userInfoVO = JSON.parseObject(info.toString(), UserDto.class);
@@ -117,19 +117,10 @@ public class RowPrivilegeAspect {
                 throw new NoRowPrivilegeException();
             }
 
-
-            boolean haveParam = false;
             for (Object arg : joinPoint.getArgs()) {
-                    haveParam = true;
                     if (check(userId, arg, checkField)) {
                         break;
                     }
-            }
-
-            // 如果需要校验的接口没有符合预期的入参, 报错
-            if (!haveParam) {
-                log.error("RowPrivilegeAspect.invoke request have not Parameter type [RequestParam], Please check request");
-                throw new NoRowPrivilegeException();
             }
         } catch (NoRowPrivilegeException e) {
             throw e;
@@ -147,11 +138,18 @@ public class RowPrivilegeAspect {
      * @return
      */
     private boolean check(Long userId, Object param, List<String> checkField) {
+
+        RowPrivilegeProperty rowPrivilegeProperty = param.getClass().getAnnotation(RowPrivilegeProperty.class);
+
+        if(rowPrivilegeProperty == null) {
+            return true;
+        }
+
         Field[] fields = param.getClass().getDeclaredFields();
         for (Field field : fields) {
 
             // 成员变量在fieldNameMap配置之中且在RowPrivilege注解校验范围, RowPrivilege校验范围为空则进行允许全部类型进行校验
-            boolean checkable = field != null && fieldNameMap.get(field.getName()) != null && (checkField.contains(field.getName()) || checkField.isEmpty());
+            boolean checkable = field != null && field.getAnnotation(RowPrivilegeProperty.class) != null;
             // 遍历输入参数, 找到需要进行权限控制的成员变量, 通过反射获取该成员变量的值
             // 将此值与用户应有的权限值进行比较
             if (checkable) {
@@ -160,7 +158,6 @@ public class RowPrivilegeAspect {
                     Method getMethod = param.getClass().getDeclaredMethod("get" + this.firstToUpper(fieldName));
                     Object result = getMethod.invoke(param);
 
-                    // TODO result三种情况, 目前暂时支持result为null和为String的情况, 以后统一改成List
                     if (result == null) {
                         List<String> privilegeList = rowPrivilegeService.listPrivilegeCode(userId, fieldNameMap.get(fieldName));
                         checkIfParamNull(param, fieldName, privilegeList);
