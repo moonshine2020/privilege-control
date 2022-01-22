@@ -12,6 +12,12 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.PARAMETER, ElementType.FIELD})
 public @interface RowPrivilegeProperty {
-    String[] constant() default  "";
-    String[] range() default "";
+
+    // 常量数组
+    String[] value() default  {};
+
+    String[] range() default {};
+
+    // 远程配置
+    String[] link() default {};
 }

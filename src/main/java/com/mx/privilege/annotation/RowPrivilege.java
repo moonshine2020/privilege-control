@@ -13,5 +13,5 @@ import java.util.List;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE})
 public @interface RowPrivilege {
-    String[] value() default "";
+    String[] value() default {};
 }

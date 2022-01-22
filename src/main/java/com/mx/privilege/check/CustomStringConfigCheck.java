@@ -1,8 +1,9 @@
-package com.mx.privilege.aspect;
+package com.mx.privilege.check;
 
 import com.alibaba.fastjson.JSON;
 import com.mx.privilege.annotation.RowPrivilege;
 import com.mx.privilege.annotation.RowPrivilegeProperty;
+import com.mx.privilege.aspect.RowPrivilegeService;
 import com.mx.privilege.constant.Constant;
 import com.mx.privilege.exception.NoRowPrivilegeException;
 import com.mx.privilege.pojo.UserDto;
@@ -11,9 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
-import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -31,18 +29,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 行级数据权限校验
- *
- * @Author: Xu.Meng1
- * @Date: 2022/1/7 15:11
+ * @author mengxu
+ * @date 2022/1/22 11:31
  */
 @Slf4j
-@Aspect
 @Component
-public class RowPrivilegeAspect {
+public class CustomStringConfigCheck {
 
     @Value("#{${row.privilege.field}}")
     private Map<String, String> fieldNameMap;
+
 
     @Resource
     private RowPrivilegeService rowPrivilegeService;
@@ -50,17 +46,23 @@ public class RowPrivilegeAspect {
     @Resource
     private RedisUtil redisUtil;
 
-    /**
-     * @Description: 定义需要拦截的切面
-     * @Return: void
-     **/
-    @Pointcut("@annotation(com.mx.privilege.annotation.RowPrivilege) ||@target(com.mx.privilege.annotation.RowPrivilege)")
-    public void methodArgs() {
+    public boolean check(JoinPoint joinPoint) {
 
-    }
+        if (ArrayUtils.isEmpty(joinPoint.getArgs())) {
+            log.error("RowPrivilegeAspect.invoke request have not any Parameter, Please check request");
+            throw new NoRowPrivilegeException();
+        }
 
-    @Before("methodArgs()")
-    public void invoke(JoinPoint joinPoint) {
+        MethodSignature ms = (MethodSignature) joinPoint.getSignature();
+        Method method = ms.getMethod();
+        RowPrivilege rowPrivilege = method.getAnnotation(RowPrivilege.class);
+        if(rowPrivilege == null) {
+            log.error("RowPrivilegeAspect.invoke no have RowPrivilege annotation!");
+            throw new NoRowPrivilegeException();
+        }
+
+        String[] value =  rowPrivilege.value();
+        List<String> checkField = Arrays.asList(value);
         try {
 
             // TODO 判断是否为超级管理员, 管理员直接放行, 待开发, 目前不支持,无法判断用户是否为超级管理员
@@ -90,7 +92,9 @@ public class RowPrivilegeAspect {
             }
 
             for (Object arg : joinPoint.getArgs()) {
-                    check(userId, arg);
+                if (check(userId, arg, checkField)) {
+                    break;
+                }
             }
         } catch (NoRowPrivilegeException e) {
             throw e;
@@ -98,6 +102,7 @@ public class RowPrivilegeAspect {
             log.error("RowPrivilegeAspect.invoke error!", e);
             throw new NoRowPrivilegeException();
         }
+        return true;
     }
 
     /**
@@ -107,16 +112,12 @@ public class RowPrivilegeAspect {
      * @param param
      * @return
      */
-    private boolean check(Long userId, Object param) {
+    private boolean check(Long userId, Object param, List<String> checkField) {
 
         RowPrivilegeProperty rowPrivilegeProperty = param.getClass().getAnnotation(RowPrivilegeProperty.class);
 
         if(rowPrivilegeProperty == null) {
             return true;
-        }
-
-        if(param instanceof String) {
-
         }
 
         Field[] fields = param.getClass().getDeclaredFields();
