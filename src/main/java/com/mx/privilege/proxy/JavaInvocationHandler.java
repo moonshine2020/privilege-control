@@ -18,6 +18,7 @@ public class JavaInvocationHandler<T> implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         System.out.println("JavaInvocationHandler Before invoke ...");
         Object result = method.invoke(target, args);
+        System.out.println("JavaInvocationHandler invoke()");
         System.out.println("JavaInvocationHandler After invoke ...");
         return result;
     }

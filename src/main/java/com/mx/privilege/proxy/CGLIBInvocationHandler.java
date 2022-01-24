@@ -19,6 +19,7 @@ public class CGLIBInvocationHandler<T> implements InvocationHandler {
     public Object invoke(Object o, Method method, Object[] objects) throws Throwable {
         System.out.println("CGLIBInvocationHandler Before invoke ...");
         Object result = method.invoke(target, objects);
+        System.out.println("CGLIBInvocationHandler invoke()");
         System.out.println("CGLIBInvocationHandler After invoke ...");
         return result;
     }
