@@ -16,7 +16,7 @@ import javax.validation.Valid;
  * @author mengxu
  * @date 2022/1/16 21:26
  */
-@RowPrivilege("name")
+
 @RestController
 public class RequestDemo {
 
@@ -31,7 +31,7 @@ public class RequestDemo {
         redisUtil.set("USER:TOKEN:123456", JSON.toJSONString(userDto));
     }
 
-
+    @RowPrivilege("name")
     @PostMapping("/privilege/test")
     public String test(@RequestBody RequestDto requestDto) {
         return "success";

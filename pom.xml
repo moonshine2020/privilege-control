@@ -37,12 +37,12 @@
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
         <dependency>
-            <groupId>repository.org.apache.commons</groupId>
+            <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.8.1</version>
         </dependency>
         <dependency>
-            <groupId>repository.com.alibaba</groupId>
+            <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>1.2.50</version>
         </dependency>
