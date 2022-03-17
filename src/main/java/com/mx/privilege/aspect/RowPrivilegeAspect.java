@@ -54,7 +54,7 @@ public class RowPrivilegeAspect {
      * @Description: 定义需要拦截的切面
      * @Return: void
      **/
-    @Pointcut("@annotation(com.mx.privilege.annotation.RowPrivilege) ||@target(com.mx.privilege.annotation.RowPrivilege)")
+    @Pointcut("@annotation(com.mx.privilege.annotation.RowPrivilege) || @target(com.mx.privilege.annotation.RowPrivilege)")
     public void methodArgs() {
 
     }
