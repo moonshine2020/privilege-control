@@ -1,20 +1,18 @@
 package com.mx.privilege.aspect;
 
 import com.alibaba.fastjson.JSON;
-import com.mx.privilege.annotation.RowPrivilege;
 import com.mx.privilege.annotation.RowPrivilegeProperty;
 import com.mx.privilege.constant.Constant;
 import com.mx.privilege.exception.NoRowPrivilegeException;
 import com.mx.privilege.pojo.UserDto;
+import com.mx.privilege.service.RowPrivilegeService;
 import com.mx.privilege.util.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
-import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -26,7 +24,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -53,6 +50,8 @@ public class RowPrivilegeAspect {
     /**
      * @Description: 定义需要拦截的切面
      * @Return: void
+     *
+     * 拦截被注解的方法和被注解的类中的所有方法
      **/
     @Pointcut("@annotation(com.mx.privilege.annotation.RowPrivilege) || @target(com.mx.privilege.annotation.RowPrivilege)")
     public void methodArgs() {
@@ -69,7 +68,7 @@ public class RowPrivilegeAspect {
             String token = request.getHeader(Constant.TOKEN);
 
             if(StringUtils.isBlank(token)) {
-                log.error("token is bland, Please check token!");
+                log.error("RowPrivilegeAspect.invoke token is blank, Please check token!");
                 throw new NoRowPrivilegeException();
             }
 
@@ -80,18 +79,19 @@ public class RowPrivilegeAspect {
                 UserDto userInfoVO = JSON.parseObject(info.toString(), UserDto.class);
                 userId = userInfoVO.getId();
             } else {
-                log.warn("RowPrivilegeService.listPrivilege token invalid");
+                log.warn("RowPrivilegeAspect.invoke token invalid");
                 throw new NoRowPrivilegeException();
             }
 
             if (userId == null) {
-                log.error("RowPrivilegeAspect userId is null !");
+                log.error("RowPrivilegeAspect.invoke userId is null !");
                 throw new NoRowPrivilegeException();
             }
 
             for (Object arg : joinPoint.getArgs()) {
-                    check(userId, arg);
+                    this.check(userId, arg);
             }
+
         } catch (NoRowPrivilegeException e) {
             throw e;
         } catch (Exception e) {
@@ -113,10 +113,6 @@ public class RowPrivilegeAspect {
 
         if(rowPrivilegeProperty == null) {
             return true;
-        }
-
-        if(param instanceof String) {
-
         }
 
         Field[] fields = param.getClass().getDeclaredFields();
