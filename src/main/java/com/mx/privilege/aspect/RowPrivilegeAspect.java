@@ -7,6 +7,8 @@ import com.mx.privilege.exception.NoRowPrivilegeException;
 import com.mx.privilege.pojo.UserDto;
 import com.mx.privilege.service.RowPrivilegeService;
 import com.mx.privilege.util.RedisUtil;
+import com.mx.privilege.validator.Validator;
+import com.mx.privilege.validator.ValidatorFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.JoinPoint;
@@ -24,6 +26,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -115,93 +118,11 @@ public class RowPrivilegeAspect {
             return true;
         }
 
-        Field[] fields = param.getClass().getDeclaredFields();
-        for (Field field : fields) {
-
-            // 成员变量在fieldNameMap配置之中且在RowPrivilege注解校验范围, RowPrivilege校验范围为空则进行允许全部类型进行校验
-            boolean checkable = field != null && field.getAnnotation(RowPrivilegeProperty.class) != null;
-            // 遍历输入参数, 找到需要进行权限控制的成员变量, 通过反射获取该成员变量的值
-            // 将此值与用户应有的权限值进行比较
-            if (checkable) {
-                String fieldName = field.getName();
-                try {
-                    Method getMethod = param.getClass().getDeclaredMethod("get" + this.firstToUpper(fieldName));
-                    Object result = getMethod.invoke(param);
-
-                    if (result == null) {
-                        List<String> privilegeList = rowPrivilegeService.listPrivilegeCode(userId, fieldNameMap.get(fieldName));
-                        checkIfParamNull(param, fieldName, privilegeList);
-                    } else if (result instanceof List) {
-                        List<String> sourceList = (List<String>) result;
-                        List<String> privilegeList = rowPrivilegeService.listPrivilegeCode(userId, fieldNameMap.get(fieldName));
-
-                        if (sourceList.isEmpty() && checkIfParamNull(param, fieldName, privilegeList)) {
-                            return true;
-                        }
-
-                        checkPrivilege(sourceList, privilegeList, userId, fieldName);
-                    } else if (result instanceof String) {
-                        List<String> sourceList = new ArrayList<>();
-                        sourceList.add(result.toString());
-                        List<String> privilegeList = rowPrivilegeService.listPrivilegeCode(userId, fieldNameMap.get(fieldName));
-                        checkPrivilege(sourceList, privilegeList, userId, fieldName);
-                    } else {
-                        log.error("RowPrivilegeAspect.check result is error, result = {}", JSON.toJSONString(result));
-                        throw new NoRowPrivilegeException();
-                    }
-                } catch (NoRowPrivilegeException e) {
-                    throw e;
-                } catch (Exception e) {
-                    log.error("RowPrivilegeAspect.check check error, fieldName = {}", fieldName, e);
-                    throw new NoRowPrivilegeException();
-                }
-            } else if (log.isDebugEnabled()) {
-                log.debug("field [{}] no need row privilege check!", field != null? field.getName():null);
-            }
-        }
-        return true;
+        Validator validator = ValidatorFactory.getValidator(param.getClass());
+        List<String> privilegeList = Arrays.asList(rowPrivilegeProperty.value());
+        return validator.check(validateMetadata);
     }
 
-    /**
-     * //TODO 如果参数为空, 则为查询权限内全部 此为特殊处理, 以后修改
-     * 如果请求参数中需要校验的属性为空, 此时特殊处理, 将该用户的该属性所有权限赋值给属性字段
-     *
-     * @param param
-     * @param fieldName
-     * @param privilegeList
-     * @throws NoSuchMethodException
-     * @throws IllegalAccessException
-     * @throws InvocationTargetException
-     */
-    private boolean checkIfParamNull(Object param, String fieldName, List<String> privilegeList) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
-        if (privilegeList.isEmpty()) {
-            log.error("RowPrivilegeAspect.checkIfParamNull permission deny, privilegeList is null");
-            throw new NoRowPrivilegeException();
-        }
-        // 将用户所有应有的权限赋值过去
-        Field field = param.getClass().getDeclaredField(fieldName);
-        Method setMethod = param.getClass().getDeclaredMethod("set" + this.firstToUpper(fieldName), field.getType());
-
-        // 当权限中包含ALL权限时仅进行全部查询
-        // 权宜之计
-        if (field.getType() == List.class) {
-            setMethod.invoke(param, new ArrayList<>());
-            return true;
-        } else if (field.getType() == String.class) {
-            setMethod.invoke(param, "");
-            return true;
-        }
-
-        if (field.getType() == List.class) {
-            setMethod.invoke(param, privilegeList);
-        } else if (field.getType() == String.class) {
-            setMethod.invoke(param, privilegeList.get(0));
-        } else {
-            log.error("RowPrivilegeAspect.checkIfParamNull row privilege not support [{}]", field.getType());
-            throw new NoRowPrivilegeException();
-        }
-        return true;
-    }
 
     private String firstToUpper(String fieldName) {
         // 进行字母的ascii编码前移，效率要高于截取字符串进行转换的操作
