@@ -5,6 +5,7 @@ import com.mx.privilege.annotation.RowPrivilegeProperty;
 import com.mx.privilege.constant.Constant;
 import com.mx.privilege.exception.NoRowPrivilegeException;
 import com.mx.privilege.pojo.UserDto;
+import com.mx.privilege.pojo.ValidateMetadata;
 import com.mx.privilege.service.RowPrivilegeService;
 import com.mx.privilege.util.RedisUtil;
 import com.mx.privilege.validator.Validator;
@@ -120,6 +121,10 @@ public class RowPrivilegeAspect {
 
         Validator validator = ValidatorFactory.getValidator(param.getClass());
         List<String> privilegeList = Arrays.asList(rowPrivilegeProperty.value());
+        ValidateMetadata validateMetadata = new ValidateMetadata();
+        validateMetadata.setUserId(String.valueOf(userId));
+        validateMetadata.setTarget(param);
+        validateMetadata.setPrivilegeList(privilegeList);
         return validator.check(validateMetadata);
     }
 

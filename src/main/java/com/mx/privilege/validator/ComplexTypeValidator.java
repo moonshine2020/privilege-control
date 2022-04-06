@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.mx.privilege.annotation.RowPrivilegeProperty;
 import com.mx.privilege.exception.NoRowPrivilegeException;
 import com.mx.privilege.pojo.ValidateMetadata;
+import com.mx.privilege.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,20 +47,22 @@ public class ComplexTypeValidator implements Validator {
                 String fieldName = field.getName();
                 RowPrivilegeProperty rowPrivilegeProperty = field.getAnnotation(RowPrivilegeProperty.class);
                 try {
-                    Method getMethod = param.getClass().getDeclaredMethod("get" + this.firstToUpper(fieldName));
+                    Method getMethod = param.getClass().getDeclaredMethod("get" + StringUtil.firstToUpper(fieldName));
                     Object result = getMethod.invoke(param);
 
                     Validator validator = ValidatorFactory.getValidator(result.getClass());
-                    if (validator instanceof ComplexTypeValidator) {
-                        ValidateMetadata complexValidateMetadata = new ValidateMetadata();
-                        complexValidateMetadata.setFieldName(fieldName);
-                        complexValidateMetadata.setPrivilegeList(Arrays.asList(rowPrivilegeProperty.value()));
-                        complexValidateMetadata.setTarget(result);
-                        complexValidateMetadata.setUserId(validateMetadata.getUserId());
-                        if (!validator.check(complexValidateMetadata)) {
-                            return false;
-                        }
+
+                    ValidateMetadata childValidateMetadata = new ValidateMetadata();
+                    childValidateMetadata.setFieldName(fieldName);
+                    childValidateMetadata.setPrivilegeList(Arrays.asList(rowPrivilegeProperty.value()));
+                    childValidateMetadata.setTarget(result);
+                    childValidateMetadata.setUserId(validateMetadata.getUserId());
+
+
+                    if (!validator.check(childValidateMetadata)) {
+                        return false;
                     }
+
 
                     if (result == null) {
                         checkIfParamNull(param, fieldName, privilegeList);
@@ -91,12 +94,6 @@ public class ComplexTypeValidator implements Validator {
         return true;
     }
 
-    private String firstToUpper(String fieldName) {
-        // 进行字母的ascii编码前移，效率要高于截取字符串进行转换的操作
-        char[] cs = fieldName.toCharArray();
-        cs[0] -= 32;
-        return String.valueOf(cs);
-    }
 
     /**
      * 比较用户请求的权限与用户拥有权限的差异
@@ -137,7 +134,7 @@ public class ComplexTypeValidator implements Validator {
         }
         // 将用户所有应有的权限赋值过去
         Field field = param.getClass().getDeclaredField(fieldName);
-        Method setMethod = param.getClass().getDeclaredMethod("set" + this.firstToUpper(fieldName), field.getType());
+        Method setMethod = param.getClass().getDeclaredMethod("set" + StringUtil.firstToUpper(fieldName), field.getType());
 
         // 当权限中包含ALL权限时仅进行全部查询
         // 权宜之计

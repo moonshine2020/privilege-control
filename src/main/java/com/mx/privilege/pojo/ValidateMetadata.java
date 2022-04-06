@@ -26,4 +26,9 @@ public class ValidateMetadata {
      * target对象的变量名称
      */
     private String fieldName;
+
+    /**
+     * target对象上一级
+     */
+    private Object parentObject;
 }
