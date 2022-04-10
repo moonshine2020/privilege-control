@@ -6,10 +6,8 @@ import com.mx.privilege.pojo.ValidateMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.List;
 
 /**
  * @author mengxu
@@ -50,10 +48,25 @@ public class PrimitiveTypeValidator extends AbstractValidator {
             if (validateMetadata.getTarget() == null) {
                 Method setMethod = validateMetadata.getTargetSetMethod();
                 setMethod.invoke(param, validateMetadata.getPrivilegeList().get(0));
+            } else {
+                this.checkPrivilege(validateMetadata);
             }
         } catch (IllegalAccessException | InvocationTargetException e) {
             log.error("PrimitiveTypeValidator.check error, validateMetadata = {}", validateMetadata, e);
         }
         return true;
+    }
+
+    /**
+     * 参数权限校验
+     * @param validateMetadata
+     * @return
+     */
+    private boolean checkPrivilege(ValidateMetadata validateMetadata) {
+        if (validateMetadata.getPrivilegeList().contains(validateMetadata.getTarget())) {
+            return true;
+        }
+        log.error("PrimitiveTypeValidator.checkPrivilege user no have [{}] permission, validateMetadata = {}", validateMetadata.getTarget(), validateMetadata);
+        throw new NoRowPrivilegeException();
     }
 }

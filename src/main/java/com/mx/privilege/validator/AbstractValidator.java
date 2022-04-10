@@ -14,16 +14,27 @@ public abstract class AbstractValidator implements Validator {
 
     private static Logger log = LoggerFactory.getLogger(CollectionTypeValidator.class);
 
+    /**
+     * 参数校验
+     * @param validateMetadata
+     * @return
+     */
     @Override
     public boolean check(ValidateMetadata validateMetadata) {
         if (CollectionUtils.isEmpty(validateMetadata.getPrivilegeList())) {
             log.error("RowPrivilegeAspect.checkIfParamNull permission deny, privilegeList is null");
             throw new NoRowPrivilegeException();
         }
-        this.handle(validateMetadata);
 
+        this.handle(validateMetadata);
         return true;
     }
 
+    /**
+     * 处理各个类型的校验方法
+     *
+     * @param validateMetadata
+     * @return
+     */
     public abstract boolean handle(ValidateMetadata validateMetadata);
 }

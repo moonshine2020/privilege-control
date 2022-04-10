@@ -56,8 +56,7 @@ public class CollectionTypeValidator extends AbstractValidator {
         sourceList.retainAll(validateMetadata.getPrivilegeList());
 
         if (originList.size() != sourceList.size()) {
-            log.error("CollectionTypeValidator.checkPrivilege user has no privilege, userId = {}, fieldName = {}, originList = {}, privilegeList = {}, sourceList = {}"
-                    , validateMetadata.getUserId(), validateMetadata.getFieldName(), originList, validateMetadata.getPrivilegeList(), sourceList);
+            log.error("CollectionTypeValidator.checkPrivilege user has no privilege, validateMetadata = {}", validateMetadata);
             throw new NoRowPrivilegeException();
         }
         return true;

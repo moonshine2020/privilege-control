@@ -1,6 +1,5 @@
 package com.mx.privilege.validator;
 
-import com.alibaba.fastjson.JSON;
 import com.mx.privilege.annotation.RowPrivilegeProperty;
 import com.mx.privilege.exception.NoRowPrivilegeException;
 import com.mx.privilege.pojo.ValidateMetadata;
@@ -9,18 +8,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * @author mengxu
  * @date 2022/4/6 22:58
  * 复杂对象类型校验器
  */
-public class ComplexTypeValidator implements Validator {
+public class ComplexTypeValidator extends AbstractValidator {
 
     private static Logger log = LoggerFactory.getLogger(ComplexTypeValidator.class);
 
@@ -30,7 +26,7 @@ public class ComplexTypeValidator implements Validator {
     }
 
     @Override
-    public boolean check(ValidateMetadata validateMetadata) {
+    public boolean handle(ValidateMetadata validateMetadata) {
 
         Object param = validateMetadata.getTarget();
         Field[] fields = param.getClass().getDeclaredFields();
@@ -59,20 +55,6 @@ public class ComplexTypeValidator implements Validator {
                     childValidateMetadata.setTargetSetMethod(setMethod);
                     childValidateMetadata.setField(field);
                     return validator.check(childValidateMetadata);
-
-
-//                    if (result == null) {
-//                        checkIfParamNull(param, fieldName, privilegeList);
-//                    } else if (result instanceof List) {
-
-//                    } else if (result instanceof String) {
-//                        List<String> sourceList = new ArrayList<>();
-//                        sourceList.add(result.toString());
-//                        checkPrivilege(sourceList, validateMetadata);
-//                    } else {
-//                        log.error("RowPrivilegeAspect.check result is error, result = {}", JSON.toJSONString(result));
-//                        throw new NoRowPrivilegeException();
-//                    }
                 } catch (NoRowPrivilegeException e) {
                     throw e;
                 } catch (Exception e) {
@@ -85,7 +67,4 @@ public class ComplexTypeValidator implements Validator {
         }
         return true;
     }
-
-
-
 }
