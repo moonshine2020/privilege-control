@@ -114,11 +114,9 @@ public class RowPrivilegeAspect {
     private boolean check(Long userId, Object param) {
 
         RowPrivilegeProperty rowPrivilegeProperty = param.getClass().getAnnotation(RowPrivilegeProperty.class);
-
         if(rowPrivilegeProperty == null) {
             return true;
         }
-
         Validator validator = ValidatorFactory.getValidator(param.getClass());
         List<String> privilegeList = Arrays.asList(rowPrivilegeProperty.value());
         ValidateMetadata validateMetadata = new ValidateMetadata();
